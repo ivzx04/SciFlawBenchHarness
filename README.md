@@ -54,4 +54,5 @@ python src/main.py --config /path/to/your/config
 3.  more live integration tests would be nice
 4.  build agent needs to support for multiagentic setups (some of this has been thougt out with parent child architecture)
 5.  perhaps rethink how wrappers are made and what information we collect
+6.  make better readme 
 
