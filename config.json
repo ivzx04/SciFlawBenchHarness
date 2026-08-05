@@ -1,0 +1,9 @@
+{
+  "model": {
+    "provider": "litellm",
+    "model_id": "openai/gpt-5.4-nano-2026-03-17",
+    "api_key_env": "OPENAI_API_KEY",
+    "extra_kwargs": {"temperature": 0.0}
+  },
+  "task_file": "/home/ivan/work/harness_standalone/tasks/test-tasks.jsonl"
+}
