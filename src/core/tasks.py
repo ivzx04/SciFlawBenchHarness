@@ -50,7 +50,7 @@ class TaskResult(BaseModel):
     memory_trace: List[Dict] | None
 
 
-# TODO: quantatative checks on the task result should also be done here
+# TODO: quantatative checks on the task result should **probably** also be done here
 def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue: mp.Queue):
     """
     The target function actually run by the runtime manager to launch subprocesses which complete provision and

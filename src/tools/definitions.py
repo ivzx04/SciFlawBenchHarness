@@ -1,5 +1,8 @@
 from tools.base import WrappedTool
+from tools.calculator import CalculatorTool
+
 from core.registry import Registry
+
 from smolagents import  DuckDuckGoSearchTool, WikipediaSearchTool
 
 # tool registry global object that will keep track of string -> factory mappings for building our tools
@@ -12,4 +15,9 @@ def make_web_search_tool(watcher) -> WrappedTool:
 @tool_registry.register("wikipedia_search")
 def make_wiki_search_tool(watcher) -> WrappedTool:
     return WrappedTool(wrapped_tool=WikipediaSearchTool(), watcher=watcher)
+
+@tool_registry.register("calculator")
+def make_calculator_tool(watcher) -> WrappedTool:
+    return WrappedTool(wrapped_tool=CalculatorTool(), watcher=watcher)
+
 
