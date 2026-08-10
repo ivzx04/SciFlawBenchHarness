@@ -1,6 +1,6 @@
 from smolagents import Tool
 from tools.base import WrappedTool
-from tools.defintions import tool_registry
+from tools.definitions import tool_registry
 from core.events import EventWatcher
 
 

@@ -11,18 +11,17 @@ from pathlib import Path
 
 @pytest.mark.live
 @pytest.mark.skipif(
-        not os.environ.get("OPENAI_API_KEY"),
+        not os.environ.get("OPENROUTER_API_KEY"),
         reason="an api key is required to hit the real api"
         )
-def test_run_task_with_real_open_ai_agent(tmp_path):
+def test_run_task_with_real_openrouter_ai_agent(tmp_path):
     task_file = tmp_path / "tasks.jsonl"
     task_file.write_text(
     '{"task_id": 1, "task": "What year was the Eiffel Tower completed, and who was the chief engineer credited with the project?", "agent_id": "default_agent", "tools": ["web_search"]}'
     )
 
     model=ModelConfig(
-            provider="litellm", model_id="openai/gpt-5.4-nano-2026-03-17",
-            api_base="http://131.220.150.230:8080", api_key_env="OPENAI_API_KEY"
+            provider="litellm", model_id="openrouter/qwen/qwen3.7-flash", api_key_env="OPENROUTER_API_KEY"
             )
 
     with open(task_file, "r") as f:
