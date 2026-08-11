@@ -166,6 +166,7 @@ system_prompt: |-
   9. You can use imports in your code, but only from the following list of modules: {{authorized_imports}}
   10. The state persists between code executions: so if in one step you've created variables or imported modules, these will all persist.
   11. Don't give up! You're in charge of solving the task, not providing directions to solve it.
+  12. Make sure to wrap the final answer tool with an opening: '{{code_block_opening_tag}}' and closing tag: '{{code_block_closing_tag}}' or it wont be correctly parsed.
 
   {%- if custom_instructions %}
   {{custom_instructions}}

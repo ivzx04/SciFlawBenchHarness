@@ -9,7 +9,7 @@ from tools.definitions import  tool_registry
 from dataclasses import dataclass
 from pathlib import Path
 
-from smolagents import CodeAgent, Tool, LogLevel
+from smolagents import ToolCallingAgent, CodeAgent, Tool, LogLevel
 
 
 @dataclass
@@ -19,7 +19,7 @@ class BuiltAgent:
     later
     """
     watcher: EventWatcher
-    agent: CodeAgent
+    agent: CodeAgent | ToolCallingAgent
     definition: AgentDef
 
 
@@ -40,13 +40,22 @@ def build_agent(agent_id: str , model_conf: ModelConfig, watcher: EventWatcher) 
     tools = [tool_registry.create(name, watcher=watcher) for name in definition.tools] # later add multi agent support [child.to_tool() for child in definition.children],
     prompts = load_prompt_templates(definition.prompt_path)
 
-    agent = CodeAgent(
-            tools=tools, 
-            model=model,
-            prompt_templates=prompts, 
-            max_steps=definition.max_steps, 
-            verbosity_level=LogLevel.OFF
-            )
+    if definition.agent_type == "code":
+        agent = CodeAgent(
+                tools=tools, 
+                model=model,
+                prompt_templates=prompts, 
+                max_steps=definition.max_steps, 
+                verbosity_level=LogLevel.OFF
+                )
+    else:
+        agent = ToolCallingAgent(
+                tools=tools, 
+                model=model,
+                prompt_templates=prompts, 
+                max_steps=definition.max_steps, 
+                verbosity_level=LogLevel.OFF
+                )
 
     return BuiltAgent(
             watcher=watcher,
