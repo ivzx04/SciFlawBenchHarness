@@ -9,7 +9,7 @@ from tools.definitions import  tool_registry
 from dataclasses import dataclass
 from pathlib import Path
 
-from smolagents import CodeAgent, Tool
+from smolagents import CodeAgent, Tool, LogLevel
 
 
 @dataclass
@@ -45,6 +45,7 @@ def build_agent(agent_id: str , model_conf: ModelConfig, watcher: EventWatcher) 
             model=model,
             prompt_templates=prompts, 
             max_steps=definition.max_steps, 
+            verbosity_level=LogLevel.OFF
             )
 
     return BuiltAgent(

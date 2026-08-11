@@ -2,8 +2,8 @@
   "model": {
     "provider": "litellm",
     "model_id": "openrouter/qwen/qwen3.7-flash",
-    "api_key_env": "OPEN_ROUTER_API_KEY",
+    "api_key_env": "OPENROUTER_API_KEY",
     "extra_kwargs": {"temperature": 0.0}
   },
-  "task_file": "/home/ivan/work/harness_standalone/tasks/test-tasks.jsonl"
+  "task_file": "/home/ivan/work/harness_work/SciFlawBenchHarness/test-tasks.jsonl"
 }

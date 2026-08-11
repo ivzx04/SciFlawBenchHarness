@@ -11,7 +11,7 @@ class ModelConfig(BaseModel):
 
     also acts as a typing mechanism thoruhg pydantic to verify things were correctly specified
     """
-    provider: Literal["litellm", "openai_server", "hf_api", "fake_model"]
+    provider: Literal["litellm", "openai_server", "hf_api", "vllm_model", "fake_model"]
     model_id: str
     api_key_env: str
     api_base: str | None = None
@@ -47,7 +47,9 @@ class RunConfig(BaseModel):
     model: ModelConfig
     task_file: Path 
     log_path: Path = Path("logs/")
-    max_concurrent: int = 4         # defualt max concurrent task running processes
+    max_concurrent: int = 4         # default max concurrent task running processes
+    restarting: bool | None = None  # if your restarting everything specify this is true and have the log path be specific
+
 
     @field_validator("task_file")
     @classmethod
@@ -60,5 +62,3 @@ class RunConfig(BaseModel):
         if not v.suffix == ".jsonl":
             raise ValueError(f"tasks file not jsonl format: {v}")
         return v
-
-    

@@ -30,11 +30,17 @@ class RuntimeManager:
     """
 
     def __init__(self, conf: RunConfig):
-
+        logger.info("Initailizing runtime manager for current run")
         self.model_conf = conf.model
-        self.log_path = conf.log_path
+
+        if conf.restarting:
+            self.log_path = conf.log_path
+        else: 
+            self.log_path = conf.log_path / time.strftime("%Y-%m-%d %H:%M:%S")
+
         self.task_file = conf.task_file
         self.max_concurrent = conf.max_concurrent
+
 
         if not self.log_path.exists():
             os.makedirs(self.log_path)
@@ -42,6 +48,7 @@ class RuntimeManager:
         self._result_queue = mp.Queue()
         self._active: Dict[int, dict] = {} 
         self._pending = self.load_tasks()
+        logger.info("Runtime manager initialized")
     
     def load_tasks(self) -> List[TaskDef]:
         """
@@ -74,6 +81,7 @@ class RuntimeManager:
 
         res_dir = self.log_path / "results"
         if not res_dir.is_dir():
+            logger.info(f"loaded no completed items from {self.log_path}")
             return set()
         return {int(p.stem) for p in res_dir.glob("*.json")}
 
@@ -93,6 +101,8 @@ class RuntimeManager:
                         res_queue = self._result_queue
                         )
                 self._active[task.task_id] = {"proc": proc, "started": time.time()}
+                logger.info(f"Task id - ({task.task_id:03d}) is now started")
+
             self._drain_results()
             self._check_timeouts()
 
@@ -132,7 +142,9 @@ class RuntimeManager:
         if entry:
             entry["proc"].join(timeout=5)
 
-    def _check_timeouts(self, timeout_s: float = 60 * 15): # an fifteen minute timeout for a given task
+        logger.info(f"Task: {task_id:03d} completed")
+
+    def _check_timeouts(self, timeout_s: float = 60 * 15): # a fifteen minute timeout for a given task
         """
         Another funcotoin run at the end of the spanwing loop which basically just checks the active processes and kills
         them if they dont complete in the specified amount of seconds. For the moment this waits 15 minutes on any given
@@ -149,3 +161,4 @@ class RuntimeManager:
                 if entry['proc'].is_alive():
                     entry['proc'].kill()
                 del self._active[task_id]
+                logger.info(f"Task: {task_id:03d} timed out and got killed")
