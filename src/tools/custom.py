@@ -44,10 +44,10 @@ class CalculatorTool(Tool):
             
 
 class JsonFinalAnswerTool(Tool):
-    name = "json_answer_tool"
-    description = "Tool for for validating final answers that specify a json format. Returns the json string if its valid json containing all required answer fields specified in the task description. Otherwise an error string mentioning what went wrong will be returned(note any final answers here must still be wrapped by a call to the final_answer function)"
-    inputs = {"json_string": {"type": "str", "description": "a json formatted string to be parsed and validated as json"}}
-    output_type = "str"
+    name = "json_answer_formatting_tool"
+    description = "Tool for for validating the format of final answers that specify a json format. Returns the json string if its valid json containing all required answer fields specified in the task description. Otherwise an error string mentioning what went wrong will be returned (note this tool does NOT actually submit the final answer. any final answers here must still be wrapped by a call to the final_answer function)"
+    inputs = {"json_string": {"type": "string", "description": "a json formatted string to be parsed and validated as json"}}
+    output_type = "string"
 
     def __init__(self, required_keys: List[str] = []):
         super().__init__()

@@ -15,8 +15,9 @@ class Registry(Generic[T]):
 
     def register(self, name: str):
         """
-        this can be called either as a decorator or with another function wrapped around it to basically register a
+        This can be called either as a decorator or with another function wrapped around it to basically register a
         single string and how to build the object we want associated with it easily 
+
         Args: 
             name (str): string associated with the object type that will be built
         """
@@ -56,8 +57,8 @@ class Registry(Generic[T]):
 
     def names(self) -> List[str]:
         """
-        lists the registered strings that map to factory functions in this registry
+        Lists the registered strings that map to factory functions in this registry
 
-        Returns (List[str]): the sorted list containing the strings that have been saved inthis registry
+        Returns (List[str]): the sorted list containing the strings that have been saved in this registry
         """
         return sorted(self._entries)

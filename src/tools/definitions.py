@@ -1,7 +1,9 @@
 from tools.base import WrappedTool
-from tools.calculator import CalculatorTool
+from tools.custom import JsonFinalAnswerTool, CalculatorTool
 
 from core.registry import Registry
+
+from typing import List
 
 from smolagents import  DuckDuckGoSearchTool, WikipediaSearchTool, VisitWebpageTool
 
@@ -16,7 +18,6 @@ def make_web_search_tool(watcher) -> WrappedTool:
 def make_wiki_search_tool(watcher) -> WrappedTool:
     return WrappedTool(wrapped_tool=WikipediaSearchTool(), watcher=watcher)
 
-
 @tool_registry.register("visit_webpage")
 def make_visit_webpage_tool(watcher) -> WrappedTool:
     return WrappedTool(wrapped_tool=VisitWebpageTool(), watcher=watcher)
@@ -25,4 +26,6 @@ def make_visit_webpage_tool(watcher) -> WrappedTool:
 def make_calculator_tool(watcher) -> WrappedTool:
     return WrappedTool(wrapped_tool=CalculatorTool(), watcher=watcher)
 
-
+@tool_registry.register("json_answer_tool")
+def make_json_formatting_tool(watcher, required_fields: List[str]=[]) -> WrappedTool:
+    return WrappedTool(wrapped_tool=JsonFinalAnswerTool(required_keys=required_fields), watcher=watcher)

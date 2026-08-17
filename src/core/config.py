@@ -48,6 +48,8 @@ class RunConfig(BaseModel):
     task_file: Path 
     log_path: Path = Path("logs/")
     max_concurrent: int = 4         # default max concurrent task running processes
+
+    logging_level: int = 20
     restarting: bool | None = None  # if your restarting everything specify this is true and have the log path be specific
 
 
@@ -58,7 +60,7 @@ class RunConfig(BaseModel):
         just checks that the task_file field exists, and is a valid jsonl file
         """
         if not v.is_file():
-            raise ValueError(f"tasks file not found: {v}")
+            raise ValueError(f"Tasks file not found: {v}")
         if not v.suffix == ".jsonl":
-            raise ValueError(f"tasks file not jsonl format: {v}")
+            raise ValueError(f"Tasks file not jsonl: {v}")
         return v

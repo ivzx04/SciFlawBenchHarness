@@ -1,6 +1,14 @@
 from smolagents import Tool
 from core.events import EventWatcher
 
+from pydantic import BaseModel, Field
+
+
+class ToolDef(BaseModel):
+    tool_name: str
+    kwargs: dict = Field(default_factory=dict)
+
+
 class WrappedTool(Tool):
     """
     A wrapper around the basic tool class that smolagents uses which is connected to an event watcher that logs what it 
@@ -26,4 +34,3 @@ class WrappedTool(Tool):
         the input/results out as well)
         """
         return self._watcher("tool", self.name, self._wrapped.forward, *args, **kwargs)
-

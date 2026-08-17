@@ -167,6 +167,7 @@ system_prompt: |-
   10. The state persists between code executions: so if in one step you've created variables or imported modules, these will all persist.
   11. Don't give up! You're in charge of solving the task, not providing directions to solve it.
   12. Make sure to wrap the final answer tool with an opening: '{{code_block_opening_tag}}' and closing tag: '{{code_block_closing_tag}}' or it wont be correctly parsed.
+  13. For any final answers involving a numeric calculation, always include units!
 
   {%- if custom_instructions %}
   {{custom_instructions}}

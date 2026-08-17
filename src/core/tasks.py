@@ -2,6 +2,9 @@ from agents.base import AgentDef, build_agent
 from agents.definitions import agent_registry
 from core.events import AgentEvent, EventWatcher
 from core.config import ModelConfig
+from evaluation.base import VerifierDef, VerificationResult, run_check
+from evaluation.definitions import verifier_registry
+from tools.base import ToolDef
 
 import os
 import json
@@ -12,7 +15,7 @@ import multiprocessing as mp
 from typing import Type, List, Dict, Any
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, Field
 
 logger = logging.getLogger(__file__)
 
@@ -32,7 +35,17 @@ class TaskDef(BaseModel):
     task_id: int
     task: str
     agent_id: str
-    tools: List[str]
+    extra_tools: List[ToolDef | str] = Field(default_factory=list)
+    validators: List[VerifierDef] = Field(default_factory=list) 
+
+    @field_validator("extra_tools", mode="before")
+    @classmethod
+    def normalize_tools(cls, v):
+        if not isinstance(v, list):
+            return v
+        return [{"tool_name": t} if isinstance(t, str) else t for t in v]
+
+
 
 class TaskResult(BaseModel):
     """
@@ -47,7 +60,7 @@ class TaskResult(BaseModel):
     success: bool
     error: str
     full_trace: List[Dict]
-    memory_trace: List[Dict] | None
+    check_results: List[VerificationResult] = Field(default_factory=list)
 
 
 # TODO: quantatative checks on the task result should **probably** also be done here
@@ -68,21 +81,20 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
     watcher = EventWatcher(task_id=task.task_id, sink=events.append)
 
     try:
-        built_agent = build_agent(task.agent_id, model_conf, watcher)
+        built_agent = build_agent(task.agent_id, model_conf, watcher, task.extra_tools)
         out = built_agent.watcher("agent", built_agent.definition.name, built_agent.agent.run, task.task)
         success = True
         error_str = ""
+        verifier_results = [run_check(verifier_registry.get(verifier.name), out, **verifier.kwargs) \
+                for verifier in task.validators]
     except Exception as e: 
         out = None
         success = False
         error_str = traceback.format_exc()
         memory_steps = None
-    else:  # if there was no error try to get agent memory
-        try:
-            memory_steps = built_agent.agent.memory.get_full_steps()
-        except Exception:
-            memory_steps = None
+        verifier_results = []
 
+    
     result = TaskResult(
             task_id=task.task_id, 
             task=task.task, 
@@ -90,7 +102,7 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
             success=success,
             error=error_str,
             full_trace=[dataclasses.asdict(event) for event in events],
-            memory_trace=memory_steps
+            check_results = verifier_results
             )
 
 
@@ -104,4 +116,3 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
         json.dump(result.model_dump(),f)
     os.rename(temp_file, out_file)
     res_queue.put({"task_id": task.task_id, "success": success})
-

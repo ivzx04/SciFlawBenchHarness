@@ -4,8 +4,6 @@ def test_simple_calculation():
     calc = CalculatorTool()
 
     result = calc.forward("10 + 10")
-
-
     assert result == "20"
 
 def test_simple_integral():

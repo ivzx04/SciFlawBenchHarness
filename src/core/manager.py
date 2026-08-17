@@ -30,6 +30,8 @@ class RuntimeManager:
     """
 
     def __init__(self, conf: RunConfig):
+        logging.basicConfig(level=conf.logging_level)
+
         logger.info("Initailizing runtime manager for current run")
         self.model_conf = conf.model
 
@@ -62,11 +64,16 @@ class RuntimeManager:
         pending = []
 
         with open(self.task_file, 'r') as f:
-            for raw_line in f:
+            for line_num, raw_line in enumerate(f):
                 line = raw_line.strip()
                 if not line:
                     continue
-                task = TaskDef(**json.loads(line))
+                try: 
+                    task = TaskDef(**json.loads(line))
+                except Exception as e:
+                    logger.error(f"Failed to load task on line {line_num + 1}: got the following error: {e}")
+                    exit(1)
+
                 if task.task_id not in already_done:
                     pending.append(task)
         return pending

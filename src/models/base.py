@@ -1,7 +1,9 @@
-from typing import Any
-
 from core.events import EventWatcher
 from core.config import ModelConfig
+
+import logging
+from typing import Any
+
 
 from smolagents import Model, OpenAIServerModel, LiteLLMModel
 
@@ -40,6 +42,9 @@ def build_model(conf: ModelConfig, watcher: EventWatcher) -> WrappedModel:
 
     match conf.provider.lower():
         case "litellm":
+            import litellm
+            litellm.suppress_debug_info = True
+
             model = LiteLLMModel(
                     model_id = conf.model_id,
                     **conf.extra_kwargs
