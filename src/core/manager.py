@@ -142,11 +142,11 @@ class RuntimeManager:
         if entry:
             entry["proc"].join(timeout=5)
 
-        logger.info(f"Task: {task_id:03d} completed")
+        logger.info(f"Task: {task_id:03d} completed successfully!")
 
     def _check_timeouts(self, timeout_s: float = 60 * 15): # a fifteen minute timeout for a given task
         """
-        Another funcotoin run at the end of the spanwing loop which basically just checks the active processes and kills
+        Another function run at the end of the spanwing loop which basically just checks the active processes and kills
         them if they dont complete in the specified amount of seconds. For the moment this waits 15 minutes on any given
         process but this can be configured fairly easily if we find that we need different time scales
 

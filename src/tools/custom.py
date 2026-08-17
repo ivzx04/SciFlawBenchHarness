@@ -1,5 +1,7 @@
 
-import sys, json, subprocess 
+import sys, json, subprocess
+
+from typing import List
 
 from smolagents import Tool
 
@@ -40,3 +42,29 @@ class CalculatorTool(Tool):
 
         return json.loads(proc.stdout)
             
+
+class JsonFinalAnswerTool(Tool):
+    name = "json_answer_tool"
+    description = "Tool for for validating final answers that specify a json format. Returns the json string if its valid json containing all required answer fields specified in the task description. Otherwise an error string mentioning what went wrong will be returned(note any final answers here must still be wrapped by a call to the final_answer function)"
+    inputs = {"json_string": {"type": "str", "description": "a json formatted string to be parsed and validated as json"}}
+    output_type = "str"
+
+    def __init__(self, required_keys: List[str] = []):
+        super().__init__()
+        self.required_keys = required_keys
+
+
+    def forward(self, json_string: str) -> str:
+        try:
+            parsed = json.loads(json_string)
+        except json.JSONDecodeError as e:
+            return f"JSONDecodeError: {e}"
+
+        if not isinstance(parsed, dict):
+            return f"Error: parsed object must be a Json object, not a string or int "
+
+        missing = [key for key in self.required_keys if key not in parsed] 
+
+        if missing:
+            return f"Error: Missing Required Key(s) - {missing}"
+        return json_string

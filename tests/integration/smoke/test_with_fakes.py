@@ -27,12 +27,15 @@ def test_run_fake_task(tmp_path, monkeypatch):
         raw_task = json.load(f)
         taskdef = TaskDef(**raw_task)
 
+    from pathlib import Path
     log_path = tmp_path / "logs"
     queue = mp.Queue()
 
     run_task(taskdef, model, log_path, queue)
 
-    data = json.loads((tmp_path / "logs" / f"{taskdef.task_id:03d}.json").read_text())
+    data = json.loads((log_path / f"{taskdef.task_id:03d}.json").read_text())
+
+    print(data["error"])
     assert data["success"] is True
 
 
@@ -52,12 +55,14 @@ def test_single_task_pipeline(tmp_path, monkeypatch):
         ),
         task_file=task_file,
         log_path=tmp_path / "logs",
+        restarting=True,
         max_concurrent=2,
     )
 
     RuntimeManager(conf).run()
 
     data = json.loads((tmp_path / "logs" / "001.json").read_text())
+    print(data["error"])
     assert data["success"] is True
 
 def test_full_pipeline(tmp_path, monkeypatch):
@@ -77,6 +82,7 @@ def test_full_pipeline(tmp_path, monkeypatch):
         ),
         task_file=task_file,
         log_path=tmp_path / "logs",
+        restarting=True,
         max_concurrent=2,
     )
 
@@ -84,6 +90,7 @@ def test_full_pipeline(tmp_path, monkeypatch):
 
     for task_id in (1, 2):
         data = json.loads((tmp_path / "logs" / f"{task_id:03d}.json").read_text())
+        print(data["error"])
         assert data["success"] is True
 
 
@@ -109,6 +116,7 @@ def test_pipeline_with_pressure(tmp_path, monkeypatch):
         ),
         task_file=task_file,
         log_path=tmp_path / "logs",
+        restarting=True,
         max_concurrent=4,
     )
 
@@ -116,4 +124,5 @@ def test_pipeline_with_pressure(tmp_path, monkeypatch):
 
     for task_id in (1, 2,3,4,5,6,7):
         data = json.loads((tmp_path / "logs" / f"{task_id:03d}.json").read_text())
+        print(data["error"])
         assert data["success"] is True

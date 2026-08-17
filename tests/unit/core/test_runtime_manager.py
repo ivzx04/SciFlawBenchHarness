@@ -19,6 +19,7 @@ def make_run_config(tmp_path: Path, task_file_content: str) -> RunConfig:
         model=ModelConfig(provider="litellm", model_id="fake", api_key_env="FAKE_KEY"),
         task_file=task_file,
         log_path=tmp_path / "logs",
+        restarting=True,
         max_concurrent=2,
     )
 

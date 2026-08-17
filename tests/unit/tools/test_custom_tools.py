@@ -1,5 +1,4 @@
-from tools.calculator import CalculatorTool
-
+from tools.custom import CalculatorTool
 
 def test_simple_calculation():
     calc = CalculatorTool()
