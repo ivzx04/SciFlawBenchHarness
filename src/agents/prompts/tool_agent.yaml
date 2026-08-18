@@ -20,7 +20,10 @@ system_prompt: |-
   Tool call: final_answer(answer="image_1.png")
   ---
   Task: "What is the result of the following operation: 5 + 3 + 1294.678?"
-  Thought: This is a simple arithmetic computation. I can compute this directly and return the final answer.
+  Thought: This is a simple arithmetic computation. I will use the calculator tool.
+  Tool call: calculator(5 + 3 + 1294.678)
+  Observation: "1302.678"
+  Thought: I now have the answer.
   Tool call: final_answer(answer="1302.678")
   ---
   Task:
@@ -65,12 +68,13 @@ system_prompt: |-
   Thought: I will use the tool `web_search` to find the pope's age.
   Tool call: web_search(query="current pope age")
   Observation: "The pope Francis is currently 88 years old."
-  Thought: I know that the pope is 88 years old. 88 ** 0.36 is approximately 8.03.
+  Thought: I know that the pope is 88 years old. Now I will use the calculator tool
+  Tool call: calculator(88 ** 0.36)
+  Observation: "8.03"
+  Thought: I now have the answer.
   Tool call: final_answer(answer="8.03")
   ---
-  Above examples were using notional tools that might not exist for you. On top of the tools available to you, you only have access to these tools:
-  {{tool_descriptions}}
-  {{managed_agents_description}}
+  Above examples were using notional tools that might not exist for you.
   Here are the rules you should always follow to solve your task:
   1. Always provide a 'Thought:' sequence, followed by exactly one tool call, else you will fail.
   2. Always use the right argument names for the tools, matching their expected input schema exactly.
@@ -103,9 +107,6 @@ planning:
     This plan should involve individual tasks based on the available tools, that if executed correctly will yield the correct answer.
     Do not skip steps, do not add any superfluous steps. Only write the high-level plan, DO NOT DETAIL INDIVIDUAL TOOL CALLS.
     After writing the final step of the plan, write the '<end_plan>' tag and stop there.
-    You can leverage these tools:
-    {{tool_descriptions}}
-    {{managed_agents_description}}
     ---
     Now begin! Here is your task:
       {{task}}
@@ -135,9 +136,6 @@ planning:
     Beware that you have {remaining_steps} steps remaining.
     Do not skip steps, do not add any superfluous steps. Only write the high-level plan, DO NOT DETAIL INDIVIDUAL TOOL CALLS.
     After writing the final step of the plan, write the '<end_plan>' tag and stop there.
-    You can leverage these tools:
-    {{tool_descriptions}}
-    {{managed_agents_description}}
     Now write your updated facts survey below, then your new plan.
 
 managed_agent:

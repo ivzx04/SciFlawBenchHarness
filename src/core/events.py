@@ -47,7 +47,7 @@ class EventWatcher:
             event_type (EventType): enum value specifying what kindo of event just took place
             payload (Dict[str, Any]): the actually interesting data associated with this event
         """
-        ev = AgentEvent(event_type=event_type, task_id=self.task_id, payload=payload, timestamp = time.time()) 
+        ev = AgentEvent(event_type=event_type, task_id=self.task_id, payload=payload, timestamp=time.time())
         self._sink(ev)
 
     def __call__(self, kind: Literal['agent', 'model', 'tool'], name: str, fn: Callable, *args, **kwargs) -> Any:
@@ -66,7 +66,12 @@ class EventWatcher:
 
         Returns (Any): result of the wrapped function
         """
-        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, "args": args, "kwargs": kwargs})
+        # ToolCalingAgents passes whole tools so we need to sanitize them
+        safe_kwargs = kwargs.copy()
+        if "tools_to_call_from" in safe_kwargs:
+            safe_kwargs["tools_to_call_from"] = [getattr(t, "name", t) for t in safe_kwargs["tools_to_call_from"]]
+
+        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, "args": args, "kwargs": safe_kwargs})
         try: 
             result = fn(*args, **kwargs)
             self._emit(event_type=EventType(f"{kind}_call_end"), payload={"name": name, "result": result})
