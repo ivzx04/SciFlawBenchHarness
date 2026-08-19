@@ -66,12 +66,10 @@ class EventWatcher:
 
         Returns (Any): result of the wrapped function
         """
-        # ToolCalingAgents passes whole tools so we need to sanitize them
-        safe_kwargs = kwargs.copy()
-        if "tools_to_call_from" in safe_kwargs:
-            safe_kwargs["tools_to_call_from"] = [getattr(t, "name", t) for t in safe_kwargs["tools_to_call_from"]]
 
-        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, "args": args, "kwargs": safe_kwargs})
+        start_payload = kwargs.pop("start_payload", None)
+        start_load = start_payload if start_payload is not None else {"args": args, "kwargs": kwargs}
+        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, **start_load})
         try: 
             result = fn(*args, **kwargs)
             self._emit(event_type=EventType(f"{kind}_call_end"), payload={"name": name, "result": result})

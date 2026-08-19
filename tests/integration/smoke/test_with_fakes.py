@@ -126,3 +126,71 @@ def test_pipeline_with_pressure(tmp_path, monkeypatch):
         data = json.loads((tmp_path / "logs" / f"{task_id:03d}.json").read_text())
         print(data["error"])
         assert data["success"] is True
+
+def test_success_task_writes_result_and_summary(tmp_path, monkeypatch):
+    monkeypatch.setenv("FAKE_KEY", "x")
+    monkeypatch.setenv("ENABLE_TEST_FAKES", "1")
+
+    task_file = tmp_path / "tasks.jsonl"
+    task_file.write_text(
+        '{"task_id": 1, "task": "say hi", "agent_id": "fake_agent"}\n',
+        )
+
+    conf = RunConfig(
+        model=ModelConfig(
+            provider="fake_model", model_id="fake", api_key_env="FAKE_KEY",
+            extra_kwargs={"responses": ["""```python\nfinal_answer("hi")\n```"""]},
+        ),
+        task_file=task_file,
+        log_path=tmp_path / "logs",
+        restarting=True,
+        max_concurrent=4,
+        task_timeout_s=1
+    )
+
+    RuntimeManager(conf).run()
+
+    result = json.loads((tmp_path / "logs" / "001.json").read_text())
+    assert result["success"] is True
+
+    summary_lines = (tmp_path / "logs" / "aggregate_results.jsonl").read_text().strip().splitlines()
+    assert len(summary_lines) == 1
+    entry = json.loads(summary_lines[0])
+    assert entry["id"] == 1
+    assert entry["status"] == "success"
+    assert entry["time_elapsed"]
+    assert entry["error"] == '' 
+    assert entry["checks"] == []
+
+def test_timedout_tasks(tmp_path, monkeypatch):
+    setup_basics(tmp_path, monkeypatch)
+    monkeypatch.setenv("ENABLE_TEST_FAKES", "1")
+
+    task_file = tmp_path / "tasks.jsonl"
+    task_file.write_text(
+        '{"task_id": 1, "task": "hang too long", "agent_id": "fake_agent" }\n'
+    )
+
+    conf = RunConfig(
+        model=ModelConfig(
+            provider="fake_model", model_id="fake", api_key_env="FAKE_KEY",
+            extra_kwargs={"responses": ["thanks for bearing with the wait"], "timeout": 99.0},
+        ),
+        task_file=task_file,
+        log_path=tmp_path / "logs",
+        restarting=True,
+        max_concurrent=4,
+        task_timeout_s=3
+    )
+
+    RuntimeManager(conf).run()
+
+    assert (tmp_path / "logs" / f"001.partial.json").exists()
+
+    summary_lines = (tmp_path / "logs" / "aggregate_results.jsonl").read_text().strip().splitlines()
+    assert len(summary_lines) == 1
+    entry = json.loads(summary_lines[0])
+    assert entry["id"] == 1
+    assert entry["status"] == "terminated"
+    assert entry["time_elapsed"]
+    assert entry["last_event"]

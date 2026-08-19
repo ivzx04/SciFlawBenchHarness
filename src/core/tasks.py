@@ -7,6 +7,7 @@ from evaluation.definitions import verifier_registry
 from tools.base import ToolDef
 
 import os
+import time
 import json
 import traceback
 import dataclasses
@@ -63,7 +64,6 @@ class TaskResult(BaseModel):
     check_results: List[VerificationResult] = Field(default_factory=list)
 
 
-# TODO: quantatative checks on the task result should **probably** also be done here
 def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue: mp.Queue):
     """
     The target function actually run by the runtime manager to launch subprocesses which complete provision and
@@ -77,8 +77,28 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
         clean up
 
     """
+    
+    start_time = time.time()
     events: List[AgentEvent] = []
     watcher = EventWatcher(task_id=task.task_id, sink=events.append)
+
+    # this dictionary will get passed into the shared log file
+    to_log = {"id": task.task_id, "task": task.task}
+
+    import signal
+    def handle_sigterm(signum, frame): # this function runs if this task ever gets terminated by the manager
+        to_log["last_event"] = dataclasses.asdict(events[-1])
+        to_log["status"] = "terminated"
+        to_log["time_elapsed"] = time.time() - start_time
+
+        res_queue.put({"task_id": task.task_id, "kind": "killed", "to_log": to_log})
+        try: 
+            partial_path = output_dir / f"{task.task_id:03d}.partial.json"
+            partial_path.write_text(json.dumps([dataclasses.asdict(e) for e in events]))
+        except Exception:
+            pass
+        raise SystemExit(1)
+    signal.signal(signal.SIGTERM, handle_sigterm)
 
     try:
         built_agent = build_agent(task.agent_id, model_conf, watcher, task.extra_tools)
@@ -115,4 +135,10 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
     with open(temp_file, 'w') as f:
         json.dump(result.model_dump(),f)
     os.rename(temp_file, out_file)
-    res_queue.put({"task_id": task.task_id, "success": success})
+
+    to_log["checks"] = verifier_results
+    to_log["status"] = "success" if success else "failed"
+    to_log["time_elapsed"] = time.time() - start_time
+    to_log["error"] = error_str
+
+    res_queue.put({"task_id": task.task_id, "kind": "task_finished", "success": success, "to_log": to_log})

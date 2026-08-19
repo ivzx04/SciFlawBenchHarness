@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 readme = "README.md"
 
 dependencies = [
-    "smolagents[litellm,toolkit,openai,vllm]>=1.0",
+    "smolagents[litellm,toolkit,openai]>=1.0",
     "wikipedia-api>=0.6",
     "pydantic>=2.0"
 ]

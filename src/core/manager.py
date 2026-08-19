@@ -9,7 +9,7 @@ import time
 import logging 
 import queue as q
 import multiprocessing as mp 
-from typing import Dict, Set, List
+from typing import Dict, Set, List, Any
 from pathlib import Path
 
 # pip installed
@@ -42,10 +42,14 @@ class RuntimeManager:
 
         self.task_file = conf.task_file
         self.max_concurrent = conf.max_concurrent
+        self.task_timeout_s = conf.task_timeout_s
 
 
         if not self.log_path.exists():
             os.makedirs(self.log_path)
+
+        self.shared_results_jsonl = self.log_path / "aggregate_results.jsonl"
+        self.run_summary_file = self.log_path / "run_summary.log"
 
         self._result_queue = mp.Queue()
         self._active: Dict[int, dict] = {} 
@@ -113,6 +117,8 @@ class RuntimeManager:
             self._drain_results()
             self._check_timeouts()
 
+        self._drain_remaining()
+
     def _spawn_task(self, task: TaskDef, model_conf: ModelConfig, log_path: Path, res_queue: mp.Queue) -> mp.Process:
         """
         simply spawns a subprocess which actually runs the task with the agent setup and model configuraion specified 
@@ -133,7 +139,7 @@ class RuntimeManager:
     def _drain_results(self, timeout:float = 3.0):
         """
         Function run at the end of the spawning loop which basically just checks for finished processes and reaps them 
-        upon having completed
+        upon having completed. Adding important results to the shared results file
 
         Args:
             timeout (float): amount of seconds to wait while accessing the result queue
@@ -143,29 +149,86 @@ class RuntimeManager:
         except q.Empty:
             return
 
+
         # reap the finished process
         task_id = msg["task_id"]
         entry = self._active.pop(task_id, None)
         if entry:
             entry["proc"].join(timeout=5)
 
-        logger.info(f"Task: {task_id:03d} completed successfully!")
+        self._handle_message(msg)
 
-    def _check_timeouts(self, timeout_s: float = 60 * 15): # a fifteen minute timeout for a given task
+
+    def _check_timeouts(self): 
         """
         Another function run at the end of the spanwing loop which basically just checks the active processes and kills
         them if they dont complete in the specified amount of seconds. For the moment this waits 15 minutes on any given
         process but this can be configured fairly easily if we find that we need different time scales
-
-        Args:
-            timeout_s (float): timeout in seconds after which a subrpocess task will be automatically reaped
         """
         now = time.time()
+        to_kill: list[int] = []
+
         for task_id, entry in self._active.items():
-            if now - entry['started'] > timeout_s:
+            if now - entry['started'] > self.task_timeout_s:
                 entry['proc'].terminate()
-                entry['proc'].join(timeout=5)
+                entry['proc'].join(timeout=10) # 10 seconds for the process to clean up after itself 
                 if entry['proc'].is_alive():
                     entry['proc'].kill()
-                del self._active[task_id]
-                logger.info(f"Task: {task_id:03d} timed out and got killed")
+                    entry['proc'].join(timeout=5)
+                to_kill.append(task_id)
+                logger.info(f"Task: {task_id:03d} timed out...")
+
+        # update dictionary state associated with killed tasks
+        for task_id in to_kill:
+            del self._active[task_id]
+
+    def _handle_message(self, msg: Dict[str, Any]):
+        """
+        takes a message in and handles logging according to what the message content is 
+
+        Args:
+            message (Dict[str, Any]): the message being sent by the subprocess to be logged
+        """
+        task_id = msg['task_id']
+        log = msg["to_log"]
+
+        match msg["kind"]:
+            case "task_finished":
+                if msg["success"]:
+                    logger.info(f"Task: {task_id:03d} completed successfully!")
+                else: 
+                    err = log["error"]
+                    logger.info(f"Task: {task_id:03d} completed exectution with following errors:\n {err} ")
+            case "killed":
+                logger.info(f"Task: {task_id:03d} reaped. Killed by timeout.")
+            case _: 
+                logger.info(f"Task: {task_id:03d} finished with undefined state...")
+
+
+        with open(self.shared_results_jsonl, "a") as f:
+            f.write(json.dumps(log)+ "\n")
+
+        with open(self.run_summary_file, "a") as f:
+            line = f"[{log['status'].upper():9}] task {log['id']:>4}  {log['time_elapsed']:.1f}s"
+            if log["status"] == "success":
+                checks = log.get('checks', [])
+                passed = sum(int(check.passed) for check in checks)
+                line += f"  Checks:     {passed}/{len(checks)}"
+            else:
+                line += f"  Last Event: {log.get('last_event', '')}"
+            f.write(line + "\n")
+
+    def _drain_remaining(self):
+        """
+        This function runs after the main loop has been completed and handles draining 
+        any remaining results in the result queue (eg. handling logging task info)
+        """
+
+        while True: 
+            try: 
+                msg = self._result_queue.get(timeout=3.0)
+            except q.Empty:
+                break
+
+            self._handle_message(msg)
+        
