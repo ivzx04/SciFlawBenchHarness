@@ -212,7 +212,7 @@ class RuntimeManager:
             line = f"[{log['status'].upper():9}] task {log['id']:>4}  {log['time_elapsed']:.1f}s"
             if log["status"] == "success":
                 checks = log.get('checks', [])
-                passed = sum(int(check.passed) for check in checks)
+                passed = sum(int(check['passed']) for check in checks)
                 line += f"  Checks:     {passed}/{len(checks)}"
             else:
                 line += f"  Last Event: {log.get('last_event', '')}"

@@ -4,5 +4,5 @@
     "model_id": "openrouter/qwen/qwen3.7-flash",
     "api_key_env": "OPENROUTER_API_KEY"
   },
-  "task_file": "/home/ivan/work/harness_work/SciFlawBenchHarness/tasks.jsonl"
+  "task_file": "tasks.jsonl"
 }

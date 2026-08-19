@@ -136,7 +136,7 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
         json.dump(result.model_dump(),f)
     os.rename(temp_file, out_file)
 
-    to_log["checks"] = verifier_results
+    to_log["checks"] = [res.model_dump() for res in verifier_results]
     to_log["status"] = "success" if success else "failed"
     to_log["time_elapsed"] = time.time() - start_time
     to_log["error"] = error_str

@@ -37,7 +37,13 @@ class WrappedModel(Model):
         """
         new_messages = messages[self._last_logged_len:]
         self._last_logged_length = len(messages)
-        kwargs["start_payload"] = {"new_messages": new_messages, "message_count": len(messages)}
+        kwargs["start_payload"] = {
+                "new_messages": new_messages, 
+                "message_count": len(messages),
+                "stop_sequences": stop_sequences,
+                "response_format": response_format,
+                "tools_to_call_from": [getattr(t, "name", t) for t in tools_to_call_from] if tools_to_call_from else [],
+                }
 
         return self._watcher("model", 
                             getattr(self._wrapped, "model_id", self._wrapped.__class__.__name__),
