@@ -12,7 +12,7 @@ EXAMPLE_TASK1_STRING = '{ "task_id": 1, "task": "Find for me what is the meaning
 EXAMPLE_TASK2_STRING = '{ "task_id": 2, "task": "research tomatoes for me and provide 5 facts with sources", "agent_id": "default", "ground_truth": 42, "tools": ["search"], "failure_modes": { "quantitative": { "correctness": true, "correct_tool_calls": false, "code_safety": false, "robustness_against_adversarial_inputs": false, "time_efficiency": false, "sycophancy":false }, "qualitative": { "planning": false, "reasoning": false, "uncertainty_awareness": true, "aesthetic_quality": false, "lost_context_on_multi_agent_tasks": false, "implicit_domain_knowledge": true } } }'
 
 
-def make_run_config(tmp_path: Path, task_file_content: str) -> RunConfig:
+def make_run_config(tmp_path: Path, task_file_content: str, timeout_s = 15 * 60) -> RunConfig:
     task_file = tmp_path / "tasks.jsonl"
     task_file.write_text(task_file_content)
     return RunConfig(
@@ -21,6 +21,7 @@ def make_run_config(tmp_path: Path, task_file_content: str) -> RunConfig:
         log_path=tmp_path / "logs",
         restarting=True,
         max_concurrent=2,
+        task_timeout_s=timeout_s
     )
 
 def test_load_tasks_parses_all_lines(tmp_path, monkeypatch):
@@ -79,7 +80,8 @@ def test_drain_results_frees_active_slot(tmp_path, monkeypatch):
 
     fake_proc = MagicMock()
     manager._active[1] = {"proc": fake_proc, "started": time.time()}
-    manager._result_queue.put({"task_id": 1, "success": True})
+    manager._result_queue.put({"task_id": 1, "kind": "task_finished","success": True, 
+                               "to_log": {"id": 1,  "status": "success", "time_elapsed": 0}})
 
     manager._drain_results(timeout=1.0)
 
@@ -95,3 +97,4 @@ def test_drain_results_returns_on_empty_queue_without_blocking_forever(tmp_path,
     manager._drain_results(timeout=0.1)   # nothing on queue — should return promptly, not hang
 
     assert manager._active == {}
+

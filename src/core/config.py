@@ -50,6 +50,7 @@ class RunConfig(BaseModel):
     max_concurrent: int = 4         # default max concurrent task running processes
 
     logging_level: int = 20
+    task_timeout_s: int = 60 * 15 # 15 minute timeout for tasks before they get killed by the runtime manager
     restarting: bool | None = None  # if your restarting everything specify this is true and have the log path be specific
 
 

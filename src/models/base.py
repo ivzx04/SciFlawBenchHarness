@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 
-from smolagents import Model, OpenAIServerModel, LiteLLMModel
+from smolagents import Model, OpenAIServerModel, LiteLLMModel, ChatMessage, Tool
 
 class WrappedModel(Model):
     """
@@ -18,15 +18,34 @@ class WrappedModel(Model):
         self._wrapped = wrapped_model
         self._watcher = watcher
 
-    def generate(self, *args, **kwargs):
+        self._last_logged_len = 0
+
+
+    def generate(
+            self, 
+            messages: list[ChatMessage], 
+            stop_sequences: list[str] | None = None, 
+            response_format: dict[str, str] | None = None, 
+            tools_to_call_from: list[Tool] | None = None, 
+            **kwargs
+         ) -> ChatMessage:
         """
         the exposed generate function so that smolagents knows how to use this (wrapped with the watcher so we can get
         the input/results out as well)
+
+        note that this will try to save only message deltas on each run
         """
+        new_messages = messages[self._last_logged_len:]
+        self._last_logged_length = len(messages)
+        kwargs["start_payload"] = {"new_messages": new_messages, "message_count": len(messages)}
+
         return self._watcher("model", 
                             getattr(self._wrapped, "model_id", self._wrapped.__class__.__name__),
                              self._wrapped.generate, 
-                             *args, 
+                             messages, 
+                             stop_sequences=stop_sequences,
+                             response_format=response_format,
+                             tools_to_call_from=tools_to_call_from,
                              **kwargs)
 
 def build_model(conf: ModelConfig, watcher: EventWatcher) -> WrappedModel:
@@ -60,7 +79,7 @@ def build_model(conf: ModelConfig, watcher: EventWatcher) -> WrappedModel:
             raise NotImplementedError("HF_API NOT YET SUPPORTED")
         case "fake_model": # this branch is only for testing
             from tests.fakes.models import ScriptedModel
-            model = ScriptedModel(["message 1", "message 2", "message 3", "finished('final_ans')"] )
+            model = ScriptedModel(**conf.extra_kwargs)
         case _: 
             raise ValueError(f"Got an unsupported model Provider: {conf.provider}")
 

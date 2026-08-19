@@ -66,7 +66,9 @@ class EventWatcher:
 
         Returns (Any): result of the wrapped function
         """
-        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, "args": args, "kwargs": kwargs})
+        start_payload = kwargs.pop("start_payload", None)
+        start_load = start_payload if start_payload is not None else {"args": args, "kwargs": kwargs}
+        self._emit(event_type=EventType(f"{kind}_call_start"), payload={"name": name, **start_load})
         try: 
             result = fn(*args, **kwargs)
             self._emit(event_type=EventType(f"{kind}_call_end"), payload={"name": name, "result": result})
