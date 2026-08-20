@@ -6,6 +6,15 @@ import re
 from typing import Dict, List
 
 
+TOOL_ICONS = {
+    "web_search": "🔍",
+    "wiki_search": "📚",
+    "calculator": "🧮",
+    "visit_webpage": "🌐",
+    "json_answer": "📦",
+}
+
+
 def extract_concise_trace(events: List[Dict]) -> tuple:
     # TODO: This has to be improved or the CodingAgent, and also checked for other than search and claculator tool
     """
@@ -37,7 +46,7 @@ def extract_concise_trace(events: List[Dict]) -> tuple:
             content = res.get("content", "") if isinstance(res, dict) else str(res)
             trace.append({"event_type": t, "content": content})
 
-            u = p.get("usage") or res.get("usage") or {}
+            u = res.get("token_usage") or res.get("raw", {}).get("usage") or {}
             tokens["input_tokens"] += u.get("input_tokens", u.get("prompt_tokens", 0)) or 0
             tokens["output_tokens"] += u.get("output_tokens", u.get("completion_tokens", 0)) or 0
 
@@ -48,21 +57,12 @@ def extract_concise_trace(events: List[Dict]) -> tuple:
 
 
 def mermaid_schema(trace, status):
-    # Mapping of tool names to unique visual icons
-    tool_icons = {
-        "web_search": "🔍 Search",
-        "wiki_search": "📚 Wiki",
-        "calculator": "🧮 Calc",
-        "visit_webpage": "🌐 Visit",
-        "json_answer": "📦 JsonOutput",
-    }
-
     steps = []
     for x in trace:
         if x.get("content"):  # omit empty thoughts
             steps.append(("💭", None))
         elif "tool_name" in x:
-            label = tool_icons.get(x["tool_name"], x["tool_name"])
+            label = TOOL_ICONS.get(x["tool_name"], x["tool_name"])
             inp_key = json.dumps(x.get("inputs"), sort_keys=True)
             steps.append((label, inp_key))
 
@@ -79,7 +79,7 @@ def mermaid_schema(trace, status):
     for label, _, count in merged:
         suffix = f" ×{count}" if count > 1 else ""
         nodes.append(f"{label}{suffix}")
-    nodes.append(f"Finish {status}")
+    nodes.append(f"{status}")
 
     flow = " -> ".join(nodes)
     return f"```mermaid\n    {flow}\n```"
@@ -106,6 +106,7 @@ def get_preview(tool, text):
 
     return f"{preview}{details}"
 
+
 def save_markdown_report(json_path, output_path):
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -117,6 +118,7 @@ def save_markdown_report(json_path, output_path):
     checks = data.get("check_results") or []
     validation_str = checks[0].get("details", "None") if checks else "None"
     diagram_block = mermaid_schema(trace, status)
+    legend = " | ".join(f"{icon} {name}" for name, icon in TOOL_ICONS.items())
 
     md_lines = [
         f"# Task Report #{data.get('task_id', 'N/A')}\n",
@@ -128,6 +130,7 @@ def save_markdown_report(json_path, output_path):
         f"**Validation:** {validation_str}\n",
         "\n---\n",
         "## Execution Trace\n",
+        f"**Legend:** 💭 Thought | {legend}\n",
         diagram_block,
         "\n---\n",
     ]
@@ -137,12 +140,16 @@ def save_markdown_report(json_path, output_path):
             md_lines.append("\n---")
 
         if "content" in step:
-            thought = step['content']
-            if thought:
-                thought = f"\n> **Model Thought:**\n> {thought.strip().lstrip('Thought:')}\n"
+            content = str(step.get("content") or "").removeprefix("Thought:").strip()
+            if not content:
+                md_lines.append("\n> **Model Thought**\n> (No content)\n")
             else:
-                thought = "\n> **Model Thought:**\n> (No content)\n"
-            md_lines.append(thought)
+                body = re.sub(
+                    r"<code>\s*([\s\S]*?)\s*</code>",
+                    r"\n<details>\n<summary>Click to expand code</summary>\n\n```python\n\1\n```\n</details>\n",
+                    content,
+                )
+                md_lines.append(f"\n> **Model Thought**\n{body}\n")
 
         elif "tool_name" in step:
             tool = step.get("tool_name", "Tool")
@@ -162,3 +169,6 @@ def save_markdown_report(json_path, output_path):
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
+
+
+save_markdown_report('logs/2026-08-20 13:34:07/003.json', 'logs/2026-08-20 13:34:07/003_report.md')
