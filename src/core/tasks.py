@@ -4,6 +4,7 @@ from core.events import AgentEvent, EventWatcher
 from core.config import ModelConfig
 from evaluation.base import VerifierDef, VerificationResult, run_check
 from evaluation.definitions import verifier_registry
+from evaluation.print_report import save_markdown_report
 from tools.base import ToolDef
 
 import os
@@ -131,10 +132,13 @@ def run_task(task: TaskDef, model_conf: ModelConfig, output_dir: Path, res_queue
 
     temp_file = output_dir / f"{task.task_id:03d}.json.tmp"
     out_file = output_dir / f"{task.task_id:03d}.json"
+    report_file = output_dir / f"{task.task_id:03d}_report.md"
 
     with open(temp_file, 'w') as f:
         json.dump(result.model_dump(),f)
     os.rename(temp_file, out_file)
+
+    save_markdown_report(out_file, report_file)
 
     to_log["checks"] = [res.model_dump() for res in verifier_results]
     to_log["status"] = "success" if success else "failed"
