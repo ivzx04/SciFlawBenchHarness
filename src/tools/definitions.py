@@ -1,5 +1,5 @@
 from tools.base import WrappedTool
-from tools.custom import JsonFinalAnswerTool, CalculatorTool
+from tools.custom import JsonFinalAnswerTool, CalculatorTool, CurrentTimeTool
 
 from core.registry import Registry
 
@@ -29,3 +29,7 @@ def make_calculator_tool(watcher) -> WrappedTool:
 @tool_registry.register("json_answer_tool")
 def make_json_formatting_tool(watcher, required_fields: List[str]=[]) -> WrappedTool:
     return WrappedTool(wrapped_tool=JsonFinalAnswerTool(required_keys=required_fields), watcher=watcher)
+
+@tool_registry.register("current_time")
+def make_current_time_tool(watcher) -> WrappedTool:
+    return WrappedTool(wrapped_tool=CurrentTimeTool(),watcher=watcher)

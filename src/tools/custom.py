@@ -1,5 +1,5 @@
 
-import sys, json, subprocess
+import sys, json, subprocess, time
 
 from typing import List
 
@@ -44,8 +44,13 @@ class CalculatorTool(Tool):
             
 
 class JsonFinalAnswerTool(Tool):
-    name = "json_answer_formatting_tool"
-    description = "Tool for for validating the format of final answers that specify a json format. Returns the json string if its valid json containing all required answer fields specified in the task description. Otherwise an error string mentioning what went wrong will be returned (note this tool does NOT actually submit the final answer. any final answers here must still be wrapped by a call to the final_answer function)"
+    name = "json_answer_tool"
+    description = """Tool for for validating the format of final answers that specify a json format. Returns the json
+    string if its valid json containing all required answer fields specified in the task description. Otherwise an error
+    string mentioning what went wrong will be returned. (note this tool does NOT actually submit the final answer. any
+    final answers here must still be wrapped by a call to the final_answer tool) ALWAYS validate that this tool is
+    correctly formatting your proposed answer before submitting a final answer from its result"""
+
     inputs = {"json_string": {"type": "string", "description": "a json formatted string to be parsed and validated as json"}}
     output_type = "string"
 
@@ -68,3 +73,14 @@ class JsonFinalAnswerTool(Tool):
         if missing:
             return f"Error: Missing Required Key(s) - {missing}"
         return json_string
+
+class CurrentTimeTool(Tool):
+    name = "current_time"
+    description = """This tool just returns the current time in case this ever comes into question. returns in the
+    following format: %Y-%m-%d %H:%M:%S"""
+
+    inputs = {}
+    output_type = "string"
+
+    def forward(self) -> str:
+        return time.strftime("%Y-%m-%d %H:%M:%S")

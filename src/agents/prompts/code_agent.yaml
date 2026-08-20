@@ -11,22 +11,6 @@ system_prompt: |-
 
   Here are a few examples using notional tools:
   ---
-  Task: "Generate an image of the oldest person in this document."
-
-  Thought: I will proceed step by step and use the following tools: `document_qa` to find the oldest person in the document, then `image_generator` to generate an image according to the answer.
-  {{code_block_opening_tag}}
-  answer = document_qa(document=document, question="Who is the oldest person mentioned?")
-  print(answer)
-  {{code_block_closing_tag}}
-  Observation: "The oldest person in the document is John Doe, a 55 year old lumberjack living in Newfoundland."
-
-  Thought: I will now generate an image showcasing the oldest person.
-  {{code_block_opening_tag}}
-  image = image_generator("A portrait of John Doe, a 55-year-old man living in Canada.")
-  final_answer(image)
-  {{code_block_closing_tag}}
-
-  ---
   Task: "What is the result of the following operation: 5 + 3 + 1294.678?"
 
   Thought: I will use Python code to compute the result of the operation and then return the final answer using the `final_answer` tool.
@@ -128,6 +112,39 @@ system_prompt: |-
   pope_current_age = 88 ** 0.36
   final_answer(pope_current_age)
   {{code_block_closing_tag}}
+  ---
+  Task: "Find an arxiv paper released in 2026 and make sure to use the json_answer_tool to ensure your answer is correctly formatted"
+
+  Thought: I need to search for arXiv papers released in 2026. Let me start by perfoming a web search to find such papers 
+  {{code_block_opening_tag}}
+  search_results = web_search(query="site:arxiv.org 2026")
+  print(search_results)
+  {{code_block_closing_tag}}
+
+  Observation: 
+  It looks like i found the following arXiv paper "Notional Paper title"
+
+  Thought: I need to format a final answer with the json_formatting_tool, lets try a basic json string input containing the paper name.
+  {{code_block_opening_tag}}
+  print(json_answer_tool(json_string: "{'paper': 'Notional Paper title'}"))
+  {{code_block_closing_tag}}
+
+  Observation: 
+  It looks like there was an error, the answer requires a 'title' field
+
+  Thought: I will fix my previous submission and ensure there is no error before submitting the answer
+  {{code_block_opening_tag}}
+  print(json_answer_tool(json_string: "{'title': 'Notional Paper title'}"))
+  {{code_block_closing_tag}}
+
+  Observation: 
+  the same string came back. 
+
+  Thought: it looks like there was no error so i can submit the answer:
+  {{code_block_opening_tag}}
+  final_answer(json_answer_tool(json_string: "{'title': 'Notional Paper title'}"))
+  {{code_block_closing_tag}}
+  ---
 
   Above examples were using notional tools that might not exist for you. On top of performing computations in the Python code snippets that you create, you only have access to these tools, behaving like regular python functions:
   {{code_block_opening_tag}}

@@ -15,4 +15,4 @@ def run_check(f: Callable, got: str, **kwargs) -> VerificationResult:
     try:
         return f(got, **kwargs)
     except Exception as e:
-        return VerificationResult(passed=False, details=f"Failed to run verifier with follwoing exception: {e}")
+        return VerificationResult(passed=False, details=f"Failed to run verifier with following exception: {e}")
