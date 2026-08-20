@@ -142,7 +142,7 @@ system_prompt: |-
 
   Thought: it looks like there was no error so i can submit the answer:
   {{code_block_opening_tag}}
-  final_answer(json_answer_tool(json_string: "{'title': 'Notional Paper title'}"))
+  final_answer(json_answer_tool(json_string: '{"title": "Notional Paper title"}'))
   {{code_block_closing_tag}}
   ---
 
