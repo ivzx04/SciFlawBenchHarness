@@ -19,8 +19,11 @@ def extract_concise_trace(events: List[Dict]) -> tuple:
     # TODO: This has to be improved or the CodingAgent, and also checked for other than search and claculator tool
     """
     Extracts a concise trace from the list of AgentEvent objects, summarizing tool and model calls, duraion, and tokens.
-    :param events: List[Dict]
-    :return: A tuple containing the concise trace, token counts, and duration of the events.
+
+    Args:
+        events: List[Dict]: list of dumped agent events
+
+    Returns: A tuple containing the concise trace, token counts, and duration of the events.
     """
 
     trace = []
@@ -32,23 +35,23 @@ def extract_concise_trace(events: List[Dict]) -> tuple:
     duration = round(end_ts - start_ts, 3) if end_ts and start_ts else 0.0
 
     for e in events:
-        t, p = e.get("event_type", ""), e.get("payload") or {}
+        tool, payload = e.get("event_type", ""), e.get("payload") or {}
 
-        if t == "tool_call_start":
-            inputs = p.get("kwargs") or (p.get("args")[0] if p.get("args") else {})
-            pending_tool = {"tool_name": p.get("name"), "inputs": inputs}
-        elif t == "tool_call_end" and pending_tool:
-            pending_tool["result"] = p.get("result")
+        if tool == "tool_call_start":
+            inputs = payload.get("kwargs") or (payload.get("args", [])[0] if payload.get("args") else {})
+            pending_tool = {"tool_name": payload.get("name"), "inputs": inputs}
+        elif tool == "tool_call_end" and pending_tool:
+            pending_tool["result"] = payload.get("result")
             trace.append(pending_tool)
             pending_tool = None
-        elif t == "model_call_end":
-            res = p.get("result") or {}
+        elif tool == "model_call_end":
+            res = payload.get("result") or {}
             content = res.get("content", "") if isinstance(res, dict) else str(res)
-            trace.append({"event_type": t, "content": content})
+            trace.append({"event_type": tool, "content": content})
 
-            u = res.get("token_usage") or res.get("raw", {}).get("usage") or {}
-            tokens["input_tokens"] += u.get("input_tokens", u.get("prompt_tokens", 0)) or 0
-            tokens["output_tokens"] += u.get("output_tokens", u.get("completion_tokens", 0)) or 0
+            usage = res.get("token_usage") or res.get("raw", {}).get("usage") or {}
+            tokens["input_tokens"] += usage.get("input_tokens", usage.get("prompt_tokens", 0)) or 0
+            tokens["output_tokens"] += usage.get("output_tokens", usage.get("completion_tokens", 0)) or 0
 
     if pending_tool:
         trace.append(pending_tool)

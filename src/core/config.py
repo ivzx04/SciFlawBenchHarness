@@ -11,7 +11,7 @@ class ModelConfig(BaseModel):
 
     also acts as a typing mechanism thoruhg pydantic to verify things were correctly specified
     """
-    provider: Literal["litellm", "openai_server", "hf_api", "vllm_model", "fake_model"]
+    provider: Literal["litellm", "openai_server", "hf_api", "fake_model"]
     model_id: str
     api_key_env: str
     api_base: str | None = None
