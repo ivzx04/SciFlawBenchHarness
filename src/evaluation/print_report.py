@@ -59,26 +59,30 @@ def extract_concise_trace(events: List[Dict]) -> tuple:
 def mermaid_schema(trace, status):
     steps = []
     for x in trace:
+        has_error = False
         if x.get("content"):  # omit empty thoughts
-            steps.append(("💭", None))
+            steps.append(("💭", None, has_error))
         elif "tool_name" in x:
             label = TOOL_ICONS.get(x["tool_name"], x["tool_name"])
             inp_key = json.dumps(x.get("inputs"), sort_keys=True)
-            steps.append((label, inp_key))
+            res = str(x.get("result") or "").lower()
+            has_error = "error" in res
+            steps.append((label, inp_key, has_error))
 
     # Collapse identical consecutive calls
     merged = []
-    for label, inp in steps:
-        if inp is not None and merged and merged[-1][:2] == [label, inp]:
-            merged[-1][2] += 1
+    for label, inp, has_error in steps:
+        if inp is not None and merged and merged[-1][:3] == [label, inp, has_error]:
+            merged[-1][3] += 1
         else:
-            merged.append([label, inp, 1])
+            merged.append([label, inp, has_error, 1])
 
     # Build diagram
     nodes = ["Start"]
-    for label, _, count in merged:
+    for label, _, has_error, count in merged:
         suffix = f" ×{count}" if count > 1 else ""
-        nodes.append(f"{label}{suffix}")
+        error = "❌ " if has_error else ""
+        nodes.append(f"{label}{suffix}{error}")
     nodes.append(f"{status}")
 
     flow = " -> ".join(nodes)
@@ -124,8 +128,8 @@ def save_markdown_report(json_path, output_path):
         f"# Task Report #{data.get('task_id', 'N/A')}\n",
         f"**Task:** {data.get('task', '')}\n",
         f"**Final Output:** `{data.get('output', '')}`\n",
-        f"**Status:** {status}\n",
-        f"**Duration:** {duration:.2f}\n",
+        f"**Status:** {status}&emsp;&emsp;&emsp;",
+        f"**Duration:** {duration:.2f}&emsp;&emsp;&emsp;",
         f"**Tokens:** {token_str}\n",
         f"**Validation:** {validation_str}\n",
         "\n---\n",
@@ -169,6 +173,3 @@ def save_markdown_report(json_path, output_path):
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
-
-
-save_markdown_report('logs/2026-08-20 13:34:07/003.json', 'logs/2026-08-20 13:34:07/003_report.md')
